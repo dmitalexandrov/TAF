@@ -1,0 +1,80 @@
+[
+	{
+		"ConfigName": "Main",
+        "TestRunParameters": {
+            "Web": {
+                "Browser": "Chrome",
+                "ImplicitWait": 1500,
+                "PageLoadTimeout": 90000,
+                "AsyncJavaScriptTimeout": 90000,
+                "DownloadFolder": "downloads"
+            },
+            "iOS": {
+                "AutomationName": "XCUITest",                
+                "LaunchTimeout": 5000,
+                "Language": "en",
+                "MatchTreshold": 0.9,
+                "DebugMatchImage": true,
+                "ColorHueTreshold": 2,
+                "Devices": [
+                    {
+                        "DeviceName": "iPad (10th generation)",
+                        "PlatformVersion": "16.4",
+                        "UdId": "519C6369-11ED-42F0-8655-CFF7B52DBDD8",
+                        "AutoAcceptAlertsFlag": false,
+                        "Url": "https://app-automate.browserstack.com/dashboard/v2/quick-start/get-started"
+                    }
+                ]
+            }
+        },
+		"Config": {
+            "TestSitesURL": [
+                {
+					"Name": "MainSite",
+					"Value": "https://czub.cz"
+				},
+                {
+					"Name": "EShop",
+					"Value": "https://eshop.czub.cz"
+				}
+			],
+			"DataBases": [
+				{
+					"Name": "default",
+					"ConnectionString": "Data Source=dbServer;Integrated Security=False;User ID=dbUser;Password=dbPassword;Connect Timeout=30"
+				}
+			],
+            "APIServices": {
+                "APIHeaders": [
+                    {
+                        "Name": "User-Agent",
+                        "Value": "PostmanRuntime/7.22.0"
+                    },
+                    {
+                        "Name": "Content-Type",
+                        "Value": "application/json"
+                    }
+                ],
+                "EndPoints": [
+                    {
+                        "ServerName": "service",
+                        "EndpointUrls": [
+                            {
+                                "Name": "BaseService",
+                                "Value": "https://service/prefix/endpoint"
+                            }
+                        ]
+                    }
+                ]
+            },
+			"iOsMobileApps": [
+                {
+                    "Name": "SomeApp",
+                    "AppPath": "/Users/dmitalexandrov/Documents/Some.app",
+                    "AppBundle": "com.dmitalexandrov.someapp",
+                    "AllowButtonString": "**/XCUIElementTypeButton[`label CONTAINS[c] 'allow while'`]"
+                }
+            ]
+		}
+	}
+]
