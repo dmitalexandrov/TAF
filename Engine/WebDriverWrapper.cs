@@ -9,16 +9,17 @@ namespace Engine
 {
     public class WebDriverWrapper
     {
-        private RunConfiguration config;
+        private TestConfiguration config;
         private ITestOutputHelper output;
         private IWebDriver webDriver;
+        private Log log;
 
         private string OriginalWindow;
 
-        public WebDriverWrapper(RunConfiguration c, ITestOutputHelper o)
+        public WebDriverWrapper(TestConfiguration c, ITestOutputHelper o)
         {
             config = c;
-            output = o;
+            log = new Log(o, "=drv");
             webDriver = CreateWebDriver();
         }
 
@@ -28,15 +29,21 @@ namespace Engine
 
             string baseDirectory = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location) ??
                                     @".\";
-            string directory = Path.Combine(baseDirectory, config.DownloadFolder);
+            string directory = Path.Combine(baseDirectory, config.TestRunParameters.Web.DownloadFolder);
             
             ChromeOptions chromeOptions = new ChromeOptions();
             chromeOptions.AddArgument("incognito");
+            chromeOptions.BrowserVersion = "119";
+            chromeOptions.AddArguments("--lang=en");
+            //chromeOptions.AddArguments("--headless=new");
             chromeOptions.AddUserProfilePreference("download.default_directory", directory);
             chromeOptions.AddUserProfilePreference("download.prompt_for_download", false);
             chromeOptions.AddUserProfilePreference("plugins.always_open_pdf_externally", true);
             chromeOptions.AddUserProfilePreference("browser.download.manager.showWhenStarting", false);
             chromeOptions.AddUserProfilePreference("safebrowsing.enabled", "true");
+            var experimentalFlags = new List<string>();
+            experimentalFlags.Add("insecure-download-warnings@2"); //chrome://flags/#insecure-download-warnings
+            chromeOptions.AddLocalStatePreference("browser.enabled_labs_experiments", experimentalFlags);
             specificDriver = new ChromeDriver(chromeOptions);      
 
             var eventFiringWebDriver = new EventFiringWebDriver(specificDriver);
@@ -44,11 +51,11 @@ namespace Engine
             eventFiringWebDriver.ScriptExecuting += (sender, e) => Console.WriteLine(e.Script);
 
             eventFiringWebDriver.Manage().Timeouts().ImplicitWait =
-                TimeSpan.FromMilliseconds(config.ImplicitWait);
+                TimeSpan.FromMilliseconds(config.TestRunParameters.Web.ImplicitWait);
             eventFiringWebDriver.Manage().Timeouts().PageLoad =
-                TimeSpan.FromMilliseconds(config.PageLoadTimeout);
+                TimeSpan.FromMilliseconds(config.TestRunParameters.Web.PageLoadTimeout);
             eventFiringWebDriver.Manage().Timeouts().AsynchronousJavaScript =
-                TimeSpan.FromMilliseconds(config.AsyncJavaScriptTimeout);
+                TimeSpan.FromMilliseconds(config.TestRunParameters.Web.AsyncJavaScriptTimeout);
 
             eventFiringWebDriver.Manage().Window.Maximize();
             OriginalWindow = eventFiringWebDriver.CurrentWindowHandle;
@@ -56,14 +63,14 @@ namespace Engine
             return eventFiringWebDriver;
         }
 
-        public IWebElement FindElement(string XPath, int timeout = 4)
+        public IWebElement FindElement(string xPath, int timeout = 4)
         {
             try
             {
-                output.WriteLine($"=search `{XPath}`, timestamp {DateTime.Now.ToString("HH:mm:ss:ff")}");
+                log.Write("Search by", xPath, DateTime.Now);
                 new WebDriverWait(webDriver, TimeSpan.FromSeconds(timeout))
-                    .Until(SeleniumExtras.WaitHelpers.ExpectedConditions.ElementExists(By.XPath(XPath)));
-                IWebElement e = webDriver.FindElement(By.XPath(XPath));
+                    .Until(SeleniumExtras.WaitHelpers.ExpectedConditions.ElementExists(By.XPath(xPath)));
+                IWebElement e = webDriver.FindElement(By.XPath(xPath));
                 /* TODO: highlighting the element that is currently active/in use
                 var jsDriver = (IJavaScriptExecutor)this.WebDriver;
                 string highlightJavascript = @"arguments[0].style.cssText = ""border-width: 2px; border-style: solid; border-color: red"";";
@@ -80,24 +87,24 @@ namespace Engine
             {
                 try
                 {
-                    output.WriteLine($"StaleElementReferenceException, timestamp {DateTime.Now.ToString("HH:mm:ss:ff")}");
-                    IWebElement e = webDriver.FindElement(By.XPath(XPath));
+                    log.Write("Try to fix StaleElementReferenceException", DateTime.Now);
+                    IWebElement e = webDriver.FindElement(By.XPath(xPath));
                     return e;
                 }
                 catch (OpenQA.Selenium.NoSuchElementException)
                 {
-                    output.WriteLine($"Element with xPath `{XPath}` does not Exist.");
+                    log.Write("Element with xPath does not exist, NoSuchElementException", xPath, DateTime.Now);
                     return null;
                 }
             }
             catch (OpenQA.Selenium.NoSuchElementException)
             {
-                output.WriteLine($"Element with xPath `{XPath}` does not Exist.");
+                log.Write("Element with xPath does not exist, NoSuchElementException", xPath, DateTime.Now);
                 return null;
             }
             catch (WebDriverTimeoutException)
             {
-                output.WriteLine($"Element with xPath `{XPath}` did not waited.");
+                log.Write("Element with xPath does not exist, WebDriverTimeoutException", xPath, DateTime.Now);
                 return null;
             }
         }
@@ -158,36 +165,14 @@ namespace Engine
         {
             try
             {
-                output.WriteLine($"Navigate to URL `{url}`");
-                webDriver.Navigate().GoToUrl(url);
+                webDriver.Navigate().GoToUrl(log.Write("Navigate to URL", url, DateTime.Now));
             }
             catch (Exception ex)
             {
                 throw new Exception("Cannot navigate to URL" + ex.Message);
             }
         }
-
-        public void AcceptAlert()
-        {
-            output.WriteLine($"Accept alert.");
-            webDriver.SwitchTo().Alert().Accept();
-            webDriver.SwitchTo().DefaultContent();
-        }
-
-        public void DismissAlert()
-        {
-            output.WriteLine($"Dismissing alert.");
-            webDriver.SwitchTo().Alert().Dismiss();
-        }
-
-        public string GetAlertText()
-        {
-            output.WriteLine($"GetAlert text.");
-            string text = webDriver.SwitchTo().Alert().Text;
-            //this.WebDriver.SwitchTo().DefaultContent();
-            return text;
-        }
-
+        
         public void ReloadPage()
         {
             webDriver.Navigate().Refresh();
@@ -195,7 +180,7 @@ namespace Engine
 
         public void CloseDriver()
         {
-            output.WriteLine($"Close driver.");
+            log.Write("Close driver", DateTime.Now);
             webDriver.Quit();
         }        
     }
