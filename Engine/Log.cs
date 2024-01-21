@@ -5,7 +5,7 @@ namespace Engine
     public class Log
     {
         public ITestOutputHelper output;
-        private string logPrefix;
+        public string logPrefix;
 
         public Log(ITestOutputHelper o, string l = "=gen")
         {
