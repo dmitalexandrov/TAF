@@ -1,4 +1,4 @@
-namespace Bindings
+namespace Engine
 {
     public class TestRunParameters
     {
@@ -93,5 +93,43 @@ namespace Bindings
         public string ConfigName { get; set; }
         public TestRunParameters TestRunParameters { get; set; }
         public Config Config { get; set; }
+    }
+
+    public class TestConfigurationContext
+    {
+        public List<TestConfiguration> configList;
+        public TestConfiguration currentConfig;
+
+        public TestConfigurationContext()
+        {
+            configList = new List<TestConfiguration>();
+            configList.Add(null);
+            currentConfig = new TestConfiguration();
+        }
+        
+        public void AddConfig(TestConfiguration newConfig)
+        {
+            bool isDefault = newConfig.ConfigName.Equals("main", StringComparison.InvariantCultureIgnoreCase);
+            if (isDefault && configList[0] == null)
+            {
+                configList[0] = newConfig;
+                currentConfig = newConfig;
+            }
+            else
+                configList.Add(newConfig);
+        }
+
+        public void ApplyConfigChain(List<string> configChain)
+        {
+            if (configChain.Count > 0)
+            {                
+                foreach (string configName in configChain)
+                {
+                    TestConfiguration config = configList.Where(c => c.ConfigName.Equals(configName, StringComparison.InvariantCultureIgnoreCase)).First();
+                    if (config != null)
+                        currentConfig = config;
+                }
+            }
+        }
     }
 }

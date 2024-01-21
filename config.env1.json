@@ -1,0 +1,13 @@
+[
+	{
+		"ConfigName": "env1",
+		"Config": {
+            "TestSitesURL": [
+                {
+					"Name": "MainSite",
+					"Value": "https://kmrarms.com/en/"
+				}
+            ]
+        }
+	}
+]
